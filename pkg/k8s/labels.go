@@ -386,6 +386,9 @@ const (
 
 	// GatewayPortName is the name of the incoming port of the gateway
 	GatewayPortName = "incoming-port"
+
+	// ServiceMirrorLabel is the value used in the controller component label
+	ServiceMirrorLabel = "servicemirror"
 )
 
 // CreatedByAnnotationValue returns the value associated with
