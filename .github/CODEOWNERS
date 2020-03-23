@@ -16,9 +16,6 @@ MAINTAINERS.md @klingerf @olix0r
 
 /pkg @adleong @alpeb
 
-# Exclude dockerfiles from ownership
-!Dockerfile*
-
 # These do not have clear owners today
 # /grafana
 # /proto
