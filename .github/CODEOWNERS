@@ -8,11 +8,11 @@ MAINTAINERS.md @klingerf @olix0r
 /charts/linkerd2-cni @hemakl @zaharidichev
 /charts/linkerd-service-mirror @zaharidichev
 
-/cli @alpeb @adleong @zaharidichev
+/cli/*.go @alpeb @adleong @zaharidichev
 
-/cni-plugin @hemakl @zaharidichev
+/cni-plugin/*.go @hemakl @zaharidichev
 
-/controller @adleong @alpeb @kleimkuhler
+/controller/*.go @adleong @alpeb @kleimkuhler
 
 /pkg @adleong @alpeb
 
