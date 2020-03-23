@@ -9,7 +9,7 @@ MAINTAINERS.md @klingerf @olix0r
 /charts/linkerd-service-mirror @zaharidichev
 
 /cli @alpeb @adleong @zaharidichev
-!/cli/Dockefile-bin
+!/cli/Dockefile-bin @alpeb @adleong @zaharidichev
 
 /cni-plugin @hemakl @zaharidichev
 
