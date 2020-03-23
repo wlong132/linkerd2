@@ -31,6 +31,7 @@ const (
 	slash              = "/"
 )
 
+// JFKLSDDFJDKLSFDSJ
 type resourceTransformerInject struct {
 	allowNsInject       bool
 	injectProxy         bool
