@@ -9,12 +9,14 @@ MAINTAINERS.md @klingerf @olix0r
 /charts/linkerd-service-mirror @zaharidichev
 
 /cli @alpeb @adleong @zaharidichev
+!/cli/Dockefile-bin
 
 /cni-plugin @hemakl @zaharidichev
 
 /controller @adleong @alpeb @kleimkuhler
 
 /pkg @adleong @alpeb
+
 
 # These do not have clear owners today
 # /grafana
