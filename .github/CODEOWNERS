@@ -16,7 +16,7 @@ MAINTAINERS.md @klingerf @olix0r
 
 /pkg @adleong @alpeb
 
-/**/Dockerfile-bin @alpeb
+/cli/Dockerfile-bin @alpeb
 
 
 # These do not have clear owners today
