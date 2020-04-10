@@ -284,7 +284,7 @@ class ServiceMesh extends React.Component {
 
   render() {
     const { error, loaded, nsStatuses } = this.state;
-    const { classes } = this.props;
+    const { classes, t } = this.props;
 
     return (
       <div className="page-content">

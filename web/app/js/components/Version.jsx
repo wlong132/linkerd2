@@ -5,6 +5,7 @@ import Typography from '@material-ui/core/Typography';
 import { apiErrorPropType } from './util/ApiHelpers.jsx';
 import { withContext } from './util/AppContext.jsx';
 import { withStyles } from '@material-ui/core/styles';
+import { withTranslation } from 'react-i18next';
 
 const styles = theme => ({
   version: {
@@ -39,7 +40,7 @@ class Version extends React.Component {
     if (!latestVersion) {
       return (
         <Typography className={classes.versionMsg}>
-          Version check failed{error ? `: ${error.statusText}` : ''}.
+          {this.props.t('message3', { error: error ? `: ${error.statusText}` : '' })}
         </Typography>
       );
     }
@@ -50,7 +51,9 @@ class Version extends React.Component {
 
     return (
       <div>
-        <Typography className={classes.versionMsg}>A new version ({this.numericVersion(latestVersion)}) is available.</Typography>
+        <Typography className={classes.versionMsg}>
+          {this.props.t('message2', { latestVersion: this.numericVersion(latestVersion) })}
+        </Typography>
         <Button
           className={classes.updateBtn}
           variant="contained"
@@ -96,4 +99,4 @@ Version.defaultProps = {
   productName: 'controller',
 };
 
-export default withStyles(styles, { withTheme: true })(withContext(Version));
+export default withTranslation(['version'])(withStyles(styles, { withTheme: true })(withContext(Version)));

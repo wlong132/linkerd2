@@ -21,6 +21,7 @@ import Tap from './components/Tap.jsx';
 import Top from './components/Top.jsx';
 import TopRoutes from './components/TopRoutes.jsx';
 import { dashboardTheme } from './components/util/theme.js';
+import './i18n';
 
 const appMain = document.getElementById('main');
 const appData = !appMain ? {} : appMain.dataset;
