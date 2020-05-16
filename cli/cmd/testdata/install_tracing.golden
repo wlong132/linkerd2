@@ -951,7 +951,7 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-dst.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_DESTINATION_GET_NETWORKS
-          value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+          value: 
         - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_ADMIN_LISTEN_ADDR
@@ -1173,7 +1173,7 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-dst.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_DESTINATION_GET_NETWORKS
-          value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+          value: 
         - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_ADMIN_LISTEN_ADDR
@@ -1392,7 +1392,7 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: localhost.:8086
         - name: LINKERD2_PROXY_DESTINATION_GET_NETWORKS
-          value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+          value: 
         - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_ADMIN_LISTEN_ADDR
@@ -1661,7 +1661,7 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-dst.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_DESTINATION_GET_NETWORKS
-          value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+          value: 
         - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_ADMIN_LISTEN_ADDR
@@ -2027,7 +2027,7 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-dst.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_DESTINATION_GET_NETWORKS
-          value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+          value: 
         - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_ADMIN_LISTEN_ADDR
@@ -2229,7 +2229,7 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-dst.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_DESTINATION_GET_NETWORKS
-          value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+          value: 
         - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_ADMIN_LISTEN_ADDR
@@ -2466,7 +2466,7 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-dst.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_DESTINATION_GET_NETWORKS
-          value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+          value: 
         - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_ADMIN_LISTEN_ADDR
@@ -2691,7 +2691,7 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-dst.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_DESTINATION_GET_NETWORKS
-          value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+          value: 
         - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_ADMIN_LISTEN_ADDR
@@ -2997,7 +2997,7 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-dst.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_DESTINATION_GET_NETWORKS
-          value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+          value: 
         - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_ADMIN_LISTEN_ADDR
@@ -3202,7 +3202,7 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-dst.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_DESTINATION_GET_NETWORKS
-          value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+          value: 
         - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_ADMIN_LISTEN_ADDR
@@ -3489,7 +3489,7 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-dst.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_DESTINATION_GET_NETWORKS
-          value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+          value: 
         - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_ADMIN_LISTEN_ADDR

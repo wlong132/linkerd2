@@ -5,6 +5,8 @@
 # Values that are passed along to sub-charts
 global:
   clusterDomain: &cluster_domain cluster.local
+  clusterNetworks: 10.0.0.0/8
+
   imagePullPolicy: &image_pull_policy IfNotPresent
 
   # control plane trace configuration
