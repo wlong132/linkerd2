@@ -91,6 +91,7 @@ type (
 		IdentityTrustDomain      string `json:"identityTrustDomain"`
 		PrometheusURL            string `json:"prometheusUrl"`
 		GrafanaURL               string `json:"grafanaUrl"`
+		LinkerdVersion           string `json:"linkerdVersion"`
 
 		Proxy     *Proxy     `json:"proxy"`
 		ProxyInit *ProxyInit `json:"proxyInit"`
