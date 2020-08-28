@@ -92,6 +92,18 @@ const (
 	// that the control plane is configured with
 	LinkerdIdentity CategoryID = "linkerd-identity"
 
+	// LinkerdTapTLS Checks the integrity of the mTLS certificates
+	// that of the Tap service
+	LinkerdTapTLS CategoryID = "linkerd-tap-tls"
+
+	// LinkerdProxyInjectorTLS Checks the integrity of the mTLS certificates
+	// that of the proxy injector service
+	LinkerdProxyInjectorTLS CategoryID = "linkerd-proxy-injector-tls"
+
+	// LinkerdSPValidatorTLS Checks the integrity of the mTLS certificates
+	// that of the sp validator service
+	LinkerdSPValidatorTLS CategoryID = "linkerd-sp-validator-tls"
+
 	// LinkerdIdentityDataPlane checks that integrity of the mTLS
 	// certificates that the proxies are configured with and tries to
 	// report useful information with respect to whether the configuration
@@ -152,6 +164,10 @@ const (
 	// This key is passed to checkApiService method to check whether
 	// the api service is available or not
 	linkerdTapAPIServiceName = "v1alpha1.tap.linkerd.io"
+
+	tapTLSSecretName           = "linkerd-tap-tls"
+	proxyInjectorTLSSecretName = "linkerd-proxy-injector-tls"
+	spValidatorTLSSecretName   = "linkerd-sp-validator-tls"
 )
 
 // HintBaseURL is the base URL on the linkerd.io website that all check hints
@@ -350,19 +366,25 @@ type HealthChecker struct {
 	*Options
 
 	// these fields are set in the process of running checks
-	kubeAPI          *k8s.KubernetesAPI
-	kubeVersion      *k8sVersion.Info
-	controlPlanePods []corev1.Pod
-	apiClient        public.APIClient
-	latestVersions   version.Channels
-	serverVersion    string
-	linkerdConfig    *configPb.All
-	uuid             string
-	issuerCert       *tls.Cred
-	trustAnchors     []*x509.Certificate
-	cniDaemonSet     *appsv1.DaemonSet
-	links            []multicluster.Link
-	addOns           map[string]interface{}
+	kubeAPI             *k8s.KubernetesAPI
+	kubeVersion         *k8sVersion.Info
+	controlPlanePods    []corev1.Pod
+	apiClient           public.APIClient
+	latestVersions      version.Channels
+	serverVersion       string
+	linkerdConfig       *configPb.All
+	uuid                string
+	issuerCert          *tls.Cred
+	trustAnchors        []*x509.Certificate
+	tapCert             *tls.Cred
+	tapCaBundle         []*x509.Certificate
+	injectorCert        *tls.Cred
+	injectorCaBundle    []*x509.Certificate
+	spValidatorCert     *tls.Cred
+	spValidatorCaBundle []*x509.Certificate
+	cniDaemonSet        *appsv1.DaemonSet
+	links               []multicluster.Link
+	addOns              map[string]interface{}
 }
 
 // NewHealthChecker returns an initialized HealthChecker
@@ -903,109 +925,99 @@ func (hc *HealthChecker) allCategories() []category {
 		},
 		{
 			id: LinkerdIdentity,
-			checkers: []checker{
-				{
-					description: "certificate config is valid",
-					hintAnchor:  "l5d-identity-cert-config-valid",
-					fatal:       true,
-					check: func(context.Context) (err error) {
-						hc.issuerCert, hc.trustAnchors, err = hc.checkCertificatesConfig()
-						return
+			checkers: append(
+				[]checker{
+					{
+						description: "certificate config is valid",
+						hintAnchor:  "l5d-identity-cert-config-valid",
+						fatal:       true,
+						check: func(context.Context) (err error) {
+							hc.issuerCert, hc.trustAnchors, err = hc.checkCertificatesConfig()
+							return
+						},
 					},
 				},
-				{
-					description: "trust anchors are using supported crypto algorithm",
-					hintAnchor:  "l5d-identity-trustAnchors-use-supported-crypto",
-					fatal:       true,
-					check: func(context.Context) error {
-						var invalidAnchors []string
-						for _, anchor := range hc.trustAnchors {
-							if err := issuercerts.CheckCertAlgoRequirements(anchor); err != nil {
-								invalidAnchors = append(invalidAnchors, fmt.Sprintf("* %v %s %s", anchor.SerialNumber, anchor.Subject.CommonName, err))
+				hc.identityChecks(
+					"identity",
+					func() *tls.Cred { return hc.issuerCert },
+					func() []*x509.Certificate { return hc.trustAnchors },
+					false)...,
+			),
+		},
+		{
+			id: LinkerdTapTLS,
+			checkers: append(
+				[]checker{
+					{
+						description: "certificate config is valid",
+						hintAnchor:  "l5d-tap-cert-config-valid",
+						fatal:       true,
+						check: func(context.Context) (err error) {
+							hc.tapCaBundle, err = hc.fetchTapCaBundle()
+							if err != nil {
+								return err
 							}
-						}
-						if len(invalidAnchors) > 0 {
-							return fmt.Errorf("Invalid trustAnchors:\n\t%s", strings.Join(invalidAnchors, "\n\t"))
-						}
-						return nil
+							hc.tapCert, err = hc.fetchCredsFromSecret(tapTLSSecretName)
+							return
+						},
 					},
 				},
-				{
-					description: "trust anchors are within their validity period",
-					hintAnchor:  "l5d-identity-trustAnchors-are-time-valid",
-					fatal:       true,
-					check: func(ctx context.Context) error {
-						var expiredAnchors []string
-						for _, anchor := range hc.trustAnchors {
-							if err := issuercerts.CheckCertValidityPeriod(anchor); err != nil {
-								expiredAnchors = append(expiredAnchors, fmt.Sprintf("* %v %s %s", anchor.SerialNumber, anchor.Subject.CommonName, err))
+				hc.identityChecks(
+					"tap",
+					func() *tls.Cred { return hc.tapCert },
+					func() []*x509.Certificate { return hc.tapCaBundle },
+					true)...,
+			),
+		},
+		{
+			id: LinkerdProxyInjectorTLS,
+			checkers: append(
+				[]checker{
+					{
+						description: "certificate config is valid",
+						hintAnchor:  "l5d-proxy-injector-cert-config-valid",
+						fatal:       true,
+						check: func(context.Context) (err error) {
+							hc.injectorCaBundle, err = hc.fetchProxyInjectorCaBundle()
+							if err != nil {
+								return err
 							}
-						}
-						if len(expiredAnchors) > 0 {
-							return fmt.Errorf("Invalid anchors:\n\t%s", strings.Join(expiredAnchors, "\n\t"))
-						}
-
-						return nil
+							hc.injectorCert, err = hc.fetchCredsFromSecret(proxyInjectorTLSSecretName)
+							return
+						},
 					},
 				},
-				{
-					description: "trust anchors are valid for at least 60 days",
-					hintAnchor:  "l5d-identity-trustAnchors-not-expiring-soon",
-					warning:     true,
-					check: func(ctx context.Context) error {
-						var expiringAnchors []string
-						for _, anchor := range hc.trustAnchors {
-							if err := issuercerts.CheckExpiringSoon(anchor); err != nil {
-								expiringAnchors = append(expiringAnchors, fmt.Sprintf("* %v %s %s", anchor.SerialNumber, anchor.Subject.CommonName, err))
+				hc.identityChecks(
+					"proxy-injector",
+					func() *tls.Cred { return hc.injectorCert },
+					func() []*x509.Certificate { return hc.injectorCaBundle },
+					true)...,
+			),
+		},
+		{
+			id: LinkerdSPValidatorTLS,
+			checkers: append(
+				[]checker{
+					{
+						description: "certificate config is valid",
+						hintAnchor:  "l5d-sp-validator-cert-config-valid",
+						fatal:       true,
+						check: func(context.Context) (err error) {
+							hc.spValidatorCaBundle, err = hc.fetchSpValidatorCaBundle()
+							if err != nil {
+								return err
 							}
-						}
-						if len(expiringAnchors) > 0 {
-							return fmt.Errorf("Anchors expiring soon:\n\t%s", strings.Join(expiringAnchors, "\n\t"))
-						}
-						return nil
+							hc.spValidatorCert, err = hc.fetchCredsFromSecret(spValidatorTLSSecretName)
+							return
+						},
 					},
 				},
-				{
-					description: "issuer cert is using supported crypto algorithm",
-					hintAnchor:  "l5d-identity-issuer-cert-uses-supported-crypto",
-					fatal:       true,
-					check: func(context.Context) error {
-						if err := issuercerts.CheckCertAlgoRequirements(hc.issuerCert.Certificate); err != nil {
-							return fmt.Errorf("issuer certificate %s", err)
-						}
-						return nil
-					},
-				},
-				{
-					description: "issuer cert is within its validity period",
-					hintAnchor:  "l5d-identity-issuer-cert-is-time-valid",
-					fatal:       true,
-					check: func(ctx context.Context) error {
-						if err := issuercerts.CheckCertValidityPeriod(hc.issuerCert.Certificate); err != nil {
-							return fmt.Errorf("issuer certificate is %s", err)
-						}
-						return nil
-					},
-				},
-				{
-					description: "issuer cert is valid for at least 60 days",
-					warning:     true,
-					hintAnchor:  "l5d-identity-issuer-cert-not-expiring-soon",
-					check: func(context.Context) error {
-						if err := issuercerts.CheckExpiringSoon(hc.issuerCert.Certificate); err != nil {
-							return fmt.Errorf("issuer certificate %s", err)
-						}
-						return nil
-					},
-				},
-				{
-					description: "issuer cert is issued by the trust anchor",
-					hintAnchor:  "l5d-identity-issuer-cert-issued-by-trust-anchor",
-					check: func(ctx context.Context) error {
-						return hc.issuerCert.Verify(tls.CertificatesToPool(hc.trustAnchors), hc.issuerIdentity(), time.Time{})
-					},
-				},
-			},
+				hc.identityChecks(
+					"sp-validator",
+					func() *tls.Cred { return hc.spValidatorCert },
+					func() []*x509.Certificate { return hc.spValidatorCaBundle },
+					true)...,
+			),
 		},
 		{
 			id: LinkerdIdentityDataPlane,
@@ -1231,6 +1243,122 @@ func (hc *HealthChecker) allCategories() []category {
 						return &SkipError{Reason: "not run for non HA installs"}
 					},
 				},
+			},
+		},
+	}
+}
+
+func (hc *HealthChecker) getIdentityName(certName string) string {
+	if certName == "tap" {
+		return fmt.Sprintf("linkerd-tap.%s.svc", hc.ControlPlaneNamespace)
+	} else if certName == "proxy-injector" {
+		return fmt.Sprintf("linkerd-proxy-injector.%s.svc", hc.ControlPlaneNamespace)
+	} else if certName == "sp-validator" {
+		return fmt.Sprintf("linkerd-sp-validator.%s.svc", hc.ControlPlaneNamespace)
+	} else {
+		return hc.issuerIdentity()
+	}
+}
+
+func (hc *HealthChecker) identityChecks(certName string, cert func() *tls.Cred, trustAnchors func() []*x509.Certificate, skipAlgoChecks bool) []checker {
+	return []checker{
+		{
+			description: "trust anchors are using supported crypto algorithm",
+			hintAnchor:  fmt.Sprintf("l5d-%s-trustAnchors-use-supported-crypto", certName),
+			fatal:       true,
+			check: func(context.Context) error {
+				if skipAlgoChecks {
+					return &SkipError{Reason: fmt.Sprintf("Not doing algo checks for %s certs", certName)}
+				}
+				var invalidAnchors []string
+				for _, anchor := range trustAnchors() {
+					if err := issuercerts.CheckCertAlgoRequirements(anchor); err != nil {
+						invalidAnchors = append(invalidAnchors, fmt.Sprintf("* %v %s %s", anchor.SerialNumber, anchor.Subject.CommonName, err))
+					}
+				}
+				if len(invalidAnchors) > 0 {
+					return fmt.Errorf("Invalid trustAnchors:\n\t%s", strings.Join(invalidAnchors, "\n\t"))
+				}
+				return nil
+			},
+		},
+		{
+			description: "trust anchors are within their validity period",
+			hintAnchor:  fmt.Sprintf("l5d-%s-trustAnchors-are-time-valid", certName),
+			fatal:       true,
+			check: func(ctx context.Context) error {
+				var expiredAnchors []string
+				for _, anchor := range trustAnchors() {
+					if err := issuercerts.CheckCertValidityPeriod(anchor); err != nil {
+						expiredAnchors = append(expiredAnchors, fmt.Sprintf("* %v %s %s", anchor.SerialNumber, anchor.Subject.CommonName, err))
+					}
+				}
+				if len(expiredAnchors) > 0 {
+					return fmt.Errorf("Invalid anchors:\n\t%s", strings.Join(expiredAnchors, "\n\t"))
+				}
+
+				return nil
+			},
+		},
+		{
+			description: "trust anchors are valid for at least 60 days",
+			hintAnchor:  fmt.Sprintf("l5d-%s-trustAnchors-not-expiring-soon", certName),
+			warning:     true,
+			check: func(ctx context.Context) error {
+				var expiringAnchors []string
+				for _, anchor := range trustAnchors() {
+					anchor := anchor
+					if err := issuercerts.CheckExpiringSoon(anchor); err != nil {
+						expiringAnchors = append(expiringAnchors, fmt.Sprintf("* %v %s %s", anchor.SerialNumber, anchor.Subject.CommonName, err))
+					}
+				}
+				if len(expiringAnchors) > 0 {
+					return fmt.Errorf("Anchors expiring soon:\n\t%s", strings.Join(expiringAnchors, "\n\t"))
+				}
+				return nil
+			},
+		},
+		{
+			description: "cert is using supported crypto algorithm",
+			hintAnchor:  fmt.Sprintf("l5d-%s-cert-uses-supported-crypto", certName),
+			fatal:       true,
+			check: func(context.Context) error {
+				if skipAlgoChecks {
+					return &SkipError{Reason: fmt.Sprintf("Not doing algo checks for %s certs", certName)}
+				}
+				if err := issuercerts.CheckCertAlgoRequirements(cert().Certificate); err != nil {
+					return fmt.Errorf("issuer certificate %s", err)
+				}
+				return nil
+			},
+		},
+		{
+			description: "cert is within its validity period",
+			hintAnchor:  fmt.Sprintf("l5d-%s-cert-is-time-valid", certName),
+			fatal:       true,
+			check: func(ctx context.Context) error {
+				if err := issuercerts.CheckCertValidityPeriod(cert().Certificate); err != nil {
+					return fmt.Errorf("issuer certificate is %s", err)
+				}
+				return nil
+			},
+		},
+		{
+			description: "cert is valid for at least 60 days",
+			warning:     true,
+			hintAnchor:  fmt.Sprintf("l5d-%s-cert-not-expiring-soon", certName),
+			check: func(context.Context) error {
+				if err := issuercerts.CheckExpiringSoon(cert().Certificate); err != nil {
+					return fmt.Errorf("issuer certificate %s", err)
+				}
+				return nil
+			},
+		},
+		{
+			description: "cert is issued by the trust anchor",
+			hintAnchor:  fmt.Sprintf("l5d-%s-cert-issued-by-trust-anchor", certName),
+			check: func(ctx context.Context) error {
+				return cert().Verify(tls.CertificatesToPool(trustAnchors()), hc.getIdentityName(certName), time.Time{})
 			},
 		},
 	}
@@ -1495,6 +1623,82 @@ func (hc *HealthChecker) checkCertificatesConfig() (*tls.Cred, []*x509.Certifica
 	return issuerCreds, anchors, nil
 }
 
+var certKeyName = "crt.pem"
+var keyKeyName = "key.pem"
+
+func (hc *HealthChecker) fetchProxyInjectorCaBundle() ([]*x509.Certificate, error) {
+	mwh, err := hc.getProxyInjectorMutatingWebhook()
+	if err != nil {
+		return nil, err
+	}
+
+	caBundle, err := tls.DecodePEMCertificates(string(mwh.ClientConfig.CABundle))
+	if err != nil {
+		return nil, err
+	}
+	return caBundle, nil
+}
+
+func (hc *HealthChecker) fetchSpValidatorCaBundle() ([]*x509.Certificate, error) {
+
+	vwc, err := hc.kubeAPI.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(k8s.SPValidatorWebhookConfigName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(vwc.Webhooks) != 1 {
+		return nil, fmt.Errorf("expected 1 webhooks, found %d", len(vwc.Webhooks))
+	}
+
+	caBundle, err := tls.DecodePEMCertificates(string(vwc.Webhooks[0].ClientConfig.CABundle))
+	if err != nil {
+		return nil, err
+	}
+	return caBundle, nil
+}
+
+func (hc *HealthChecker) fetchTapCaBundle() ([]*x509.Certificate, error) {
+	apiServiceClient, err := apiregistrationv1client.NewForConfig(hc.kubeAPI.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	apiService, err := apiServiceClient.APIServices().Get(linkerdTapAPIServiceName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	caBundle, err := tls.DecodePEMCertificates(string(apiService.Spec.CABundle))
+	if err != nil {
+		return nil, err
+	}
+	return caBundle, nil
+}
+
+func (hc *HealthChecker) fetchCredsFromSecret(secretName string) (*tls.Cred, error) {
+	secret, err := hc.kubeAPI.CoreV1().Secrets(hc.ControlPlaneNamespace).Get(secretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	crt, ok := secret.Data[certKeyName]
+	if !ok {
+		return nil, fmt.Errorf("key %s needs to exist in secret %s", certKeyName, secretName)
+	}
+
+	key, ok := secret.Data[keyKeyName]
+	if !ok {
+		return nil, fmt.Errorf("key %s needs to exist in secret %s", keyKeyName, secretName)
+	}
+
+	cred, err := tls.ValidateAndCreateCreds(string(crt), string(key))
+	if err != nil {
+		return nil, err
+	}
+
+	return cred, nil
+}
+
 // FetchLinkerdConfigMap retrieves the `linkerd-config` ConfigMap from
 // Kubernetes and parses it into `linkerd2.config` protobuf.
 // TODO: Consider a different package for this function. This lives in the
@@ -1672,7 +1876,7 @@ func (hc *HealthChecker) checkCustomResourceDefinitions(shouldExist bool) error 
 	return checkResources("CustomResourceDefinitions", objects, []string{"serviceprofiles.linkerd.io"}, shouldExist)
 }
 
-func (hc *HealthChecker) getMutatingWebhookFailurePolicy() (*admissionRegistration.FailurePolicyType, error) {
+func (hc *HealthChecker) getProxyInjectorMutatingWebhook() (*admissionRegistration.MutatingWebhook, error) {
 	mwc, err := hc.kubeAPI.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get(k8s.ProxyInjectorWebhookConfigName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -1680,7 +1884,15 @@ func (hc *HealthChecker) getMutatingWebhookFailurePolicy() (*admissionRegistrati
 	if len(mwc.Webhooks) != 1 {
 		return nil, fmt.Errorf("expected 1 webhooks, found %d", len(mwc.Webhooks))
 	}
-	return mwc.Webhooks[0].FailurePolicy, nil
+	return &mwc.Webhooks[0], nil
+}
+
+func (hc *HealthChecker) getMutatingWebhookFailurePolicy() (*admissionRegistration.FailurePolicyType, error) {
+	mwh, err := hc.getProxyInjectorMutatingWebhook()
+	if err != nil {
+		return nil, err
+	}
+	return mwh.FailurePolicy, nil
 }
 
 func (hc *HealthChecker) checkMutatingWebhookConfigurations(shouldExist bool) error {

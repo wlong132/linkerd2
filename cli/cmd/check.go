@@ -179,6 +179,9 @@ func configureAndRunChecks(wout io.Writer, werr io.Writer, stage string, options
 			checks = append(checks, healthcheck.LinkerdControlPlaneExistenceChecks)
 			checks = append(checks, healthcheck.LinkerdAPIChecks)
 			checks = append(checks, healthcheck.LinkerdIdentity)
+			checks = append(checks, healthcheck.LinkerdTapTLS)
+			checks = append(checks, healthcheck.LinkerdProxyInjectorTLS)
+			checks = append(checks, healthcheck.LinkerdSPValidatorTLS)
 
 			if options.dataPlaneOnly {
 				checks = append(checks, healthcheck.LinkerdDataPlaneChecks)
