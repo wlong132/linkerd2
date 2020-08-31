@@ -35,10 +35,37 @@ linkerd-identity
 √ trust anchors are using supported crypto algorithm
 √ trust anchors are within their validity period
 √ trust anchors are valid for at least 60 days
-√ issuer cert is using supported crypto algorithm
-√ issuer cert is within its validity period
-√ issuer cert is valid for at least 60 days
-√ issuer cert is issued by the trust anchor
+√ cert is using supported crypto algorithm
+√ cert is within its validity period
+√ cert is valid for at least 60 days
+√ cert is issued by the trust anchor
+
+linkerd-tap-tls
+---------------
+√ certificate config is valid
+√ trust anchors are within their validity period
+√ trust anchors are valid for at least 60 days
+√ cert is within its validity period
+√ cert is valid for at least 60 days
+√ cert is issued by the trust anchor
+
+linkerd-proxy-injector-tls
+--------------------------
+√ certificate config is valid
+√ trust anchors are within their validity period
+√ trust anchors are valid for at least 60 days
+√ cert is within its validity period
+√ cert is valid for at least 60 days
+√ cert is issued by the trust anchor
+
+linkerd-sp-validator-tls
+------------------------
+√ certificate config is valid
+√ trust anchors are within their validity period
+√ trust anchors are valid for at least 60 days
+√ cert is within its validity period
+√ cert is valid for at least 60 days
+√ cert is issued by the trust anchor
 
 linkerd-identity-data-plane
 ---------------------------
