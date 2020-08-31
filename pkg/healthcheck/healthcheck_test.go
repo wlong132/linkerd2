@@ -2752,22 +2752,22 @@ func TestLinkerdIdentityCheckCertValidity(t *testing.T) {
 			expectedOutput: []string{"linkerd-identity-test-cat trust anchors are within their validity period: Invalid anchors:\n\t* 1 identity.linkerd.cluster.local not valid anymore. Expired on 1990-01-01T01:01:11Z"},
 		},
 		{
-			checkerToTest:    "issuer cert is within its validity period",
+			checkerToTest:    "cert is within its validity period",
 			checkDescription: "fails when the issuer cert is not valid yet",
 			lifespan: &lifeSpan{
 				starts: time.Date(2100, 1, 1, 1, 1, 1, 1, time.UTC),
 				ends:   time.Date(2101, 1, 1, 1, 1, 1, 1, time.UTC),
 			},
-			expectedOutput: []string{"linkerd-identity-test-cat issuer cert is within its validity period: issuer certificate is not valid before: 2100-01-01T01:00:51Z"},
+			expectedOutput: []string{"linkerd-identity-test-cat cert is within its validity period: certificate is not valid before: 2100-01-01T01:00:51Z"},
 		},
 		{
-			checkerToTest:    "issuer cert is within its validity period",
+			checkerToTest:    "cert is within its validity period",
 			checkDescription: "fails when the issuer cert is expired",
 			lifespan: &lifeSpan{
 				starts: time.Date(1989, 1, 1, 1, 1, 1, 1, time.UTC),
 				ends:   time.Date(1990, 1, 1, 1, 1, 1, 1, time.UTC),
 			},
-			expectedOutput: []string{"linkerd-identity-test-cat issuer cert is within its validity period: issuer certificate is not valid anymore. Expired on 1990-01-01T01:01:11Z"},
+			expectedOutput: []string{"linkerd-identity-test-cat cert is within its validity period: certificate is not valid anymore. Expired on 1990-01-01T01:01:11Z"},
 		},
 	}
 
@@ -2781,11 +2781,11 @@ func TestLinkerdIdentityCheckCertValidity(t *testing.T) {
 }
 
 func TestLinkerdIdentityCheckWrongDns(t *testing.T) {
-	expectedOutput := []string{"linkerd-identity-test-cat issuer cert is issued by the trust anchor: x509: certificate is valid for wrong.linkerd.cluster.local, not identity.linkerd.cluster.local"}
+	expectedOutput := []string{"linkerd-identity-test-cat cert is issued by the trust anchor: x509: certificate is valid for wrong.linkerd.cluster.local, not identity.linkerd.cluster.local"}
 	issuerData := createIssuerData("wrong.linkerd.cluster.local", time.Now().AddDate(-1, 0, 0), time.Now().AddDate(1, 0, 0))
 	fakeConfigMap := getFakeConfigMap(k8s.IdentityIssuerSchemeLinkerd, issuerData)
 	fakeSecret := getFakeSecret(k8s.IdentityIssuerSchemeLinkerd, issuerData)
-	runIdentityCheckTestCase(t, 0, "fails when cert dns is wrong", "issuer cert is issued by the trust anchor", fakeConfigMap, fakeSecret, expectedOutput)
+	runIdentityCheckTestCase(t, 0, "fails when cert dns is wrong", "cert is issued by the trust anchor", fakeConfigMap, fakeSecret, expectedOutput)
 
 }
 

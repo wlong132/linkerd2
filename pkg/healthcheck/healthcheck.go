@@ -168,6 +168,10 @@ const (
 	tapTLSSecretName           = "linkerd-tap-tls"
 	proxyInjectorTLSSecretName = "linkerd-proxy-injector-tls"
 	spValidatorTLSSecretName   = "linkerd-sp-validator-tls"
+	tapCertName                = "tap"
+	proxyInjectorCertName      = "proxy-injector"
+	spValidatorCertName        = "sp-validator"
+	identityCertName           = "identity"
 )
 
 // HintBaseURL is the base URL on the linkerd.io website that all check hints
@@ -938,7 +942,7 @@ func (hc *HealthChecker) allCategories() []category {
 					},
 				},
 				hc.identityChecks(
-					"identity",
+					identityCertName,
 					func() *tls.Cred { return hc.issuerCert },
 					func() []*x509.Certificate { return hc.trustAnchors },
 					false)...,
@@ -963,7 +967,7 @@ func (hc *HealthChecker) allCategories() []category {
 					},
 				},
 				hc.identityChecks(
-					"tap",
+					tapCertName,
 					func() *tls.Cred { return hc.tapCert },
 					func() []*x509.Certificate { return hc.tapCaBundle },
 					true)...,
@@ -988,7 +992,7 @@ func (hc *HealthChecker) allCategories() []category {
 					},
 				},
 				hc.identityChecks(
-					"proxy-injector",
+					proxyInjectorCertName,
 					func() *tls.Cred { return hc.injectorCert },
 					func() []*x509.Certificate { return hc.injectorCaBundle },
 					true)...,
@@ -1013,7 +1017,7 @@ func (hc *HealthChecker) allCategories() []category {
 					},
 				},
 				hc.identityChecks(
-					"sp-validator",
+					spValidatorCertName,
 					func() *tls.Cred { return hc.spValidatorCert },
 					func() []*x509.Certificate { return hc.spValidatorCaBundle },
 					true)...,
@@ -1249,11 +1253,11 @@ func (hc *HealthChecker) allCategories() []category {
 }
 
 func (hc *HealthChecker) getIdentityName(certName string) string {
-	if certName == "tap" {
+	if certName == tapCertName {
 		return fmt.Sprintf("linkerd-tap.%s.svc", hc.ControlPlaneNamespace)
-	} else if certName == "proxy-injector" {
+	} else if certName == proxyInjectorCertName {
 		return fmt.Sprintf("linkerd-proxy-injector.%s.svc", hc.ControlPlaneNamespace)
-	} else if certName == "sp-validator" {
+	} else if certName == spValidatorCertName {
 		return fmt.Sprintf("linkerd-sp-validator.%s.svc", hc.ControlPlaneNamespace)
 	} else {
 		return hc.issuerIdentity()
@@ -1327,7 +1331,7 @@ func (hc *HealthChecker) identityChecks(certName string, cert func() *tls.Cred, 
 					return &SkipError{Reason: fmt.Sprintf("Not doing algo checks for %s certs", certName)}
 				}
 				if err := issuercerts.CheckCertAlgoRequirements(cert().Certificate); err != nil {
-					return fmt.Errorf("issuer certificate %s", err)
+					return fmt.Errorf("certificate %s", err)
 				}
 				return nil
 			},
@@ -1338,7 +1342,7 @@ func (hc *HealthChecker) identityChecks(certName string, cert func() *tls.Cred, 
 			fatal:       true,
 			check: func(ctx context.Context) error {
 				if err := issuercerts.CheckCertValidityPeriod(cert().Certificate); err != nil {
-					return fmt.Errorf("issuer certificate is %s", err)
+					return fmt.Errorf("certificate is %s", err)
 				}
 				return nil
 			},
@@ -1349,7 +1353,7 @@ func (hc *HealthChecker) identityChecks(certName string, cert func() *tls.Cred, 
 			hintAnchor:  fmt.Sprintf("l5d-%s-cert-not-expiring-soon", certName),
 			check: func(context.Context) error {
 				if err := issuercerts.CheckExpiringSoon(cert().Certificate); err != nil {
-					return fmt.Errorf("issuer certificate %s", err)
+					return fmt.Errorf("certificate %s", err)
 				}
 				return nil
 			},
